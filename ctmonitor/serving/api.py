@@ -1,18 +1,19 @@
 """FastAPI Server."""
 
-from fastapi import FastAPI
-from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
 import asyncio
 import dataclasses
-from urllib.parse import urlparse
-from sse_starlette.sse import EventSourceResponse
-from pathlib import Path
-from fastapi import FastAPI
-from fastapi.staticfiles import StaticFiles
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+import json
 from datetime import datetime, timezone
+from pathlib import Path
+from urllib.parse import urlparse
+
+from fastapi import FastAPI, Query
+from fastapi.encoders import jsonable_encoder
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import Response
+from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel
+from sse_starlette.sse import EventSourceResponse
 
 from ctmonitor.ingestion.models import NormalisedCert, CertVerdict, CertVerdictTier, CertEvent
 from ctmonitor.pipeline.normaliser import Normaliser
@@ -42,21 +43,15 @@ engine = QuorumEngine(detectors=[
 class AnalyzeRequest(BaseModel):
     domain: str
 
-@app.get("/health")
-async def health():
-    return {"status": "ok", "uptime_s": 0}
 
-@app.post("/analyze")
-async def analyze(req: AnalyzeRequest):
-    # Extract domain if full URL is pasted (e.g. from browser extension)
-    raw_domain = req.domain.strip()
-    if raw_domain.startswith("http"):
-        raw_domain = urlparse(raw_domain).netloc
+def _analyse_domain(raw_domain: str):
+    domain = raw_domain.strip()
+    if domain.startswith("http"):
+        domain = urlparse(domain).netloc
 
-    # Create dummy CertEvent for immediate analysis
     event = CertEvent(
-        domain=raw_domain,
-        san_list=[raw_domain],
+        domain=domain,
+        san_list=[domain],
         issuer_cn="Local Request",
         org=None,
         not_before=datetime.now(timezone.utc),
@@ -64,12 +59,41 @@ async def analyze(req: AnalyzeRequest):
         log_id="manual",
         fingerprint_sha256="000"
     )
-    
+
     norm_cert = normaliser.process(event)
-    verdict = engine.evaluate(norm_cert)
-    
-    # Return serializable dict
-    return dataclasses.asdict(verdict)
+    return engine.evaluate(norm_cert)
+
+
+def _verdict_payload(domain: str):
+    verdict = _analyse_domain(domain)
+    payload = dataclasses.asdict(verdict)
+    payload["analysis_available"] = bool(payload.get("analysis"))
+    return payload
+
+@app.get("/health")
+async def health():
+    return {"status": "ok", "uptime_s": 0}
+
+@app.post("/analyze")
+async def analyze(req: AnalyzeRequest):
+    return _verdict_payload(req.domain)
+
+
+@app.get("/api/report")
+async def report(domain: str = Query(..., min_length=1)):
+    return _verdict_payload(domain)
+
+
+@app.get("/api/report/download")
+async def download_report(domain: str = Query(..., min_length=1)):
+    payload = _verdict_payload(domain)
+    safe_name = domain.replace("/", "_").replace(":", "_")
+    body = json.dumps(jsonable_encoder(payload), indent=2)
+    return Response(
+        content=body,
+        media_type="application/json",
+        headers={"Content-Disposition": f'attachment; filename="ctmonitor-report-{safe_name}.json"'}
+    )
 
 @app.get("/stream")
 async def stream():

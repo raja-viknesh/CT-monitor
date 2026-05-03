@@ -170,6 +170,9 @@ class CertVerdict:
     
     detector_results: list[DetectorResult]
     """Per-detector breakdown of evidence."""
+
+    analysis: dict
+    """Structured explanation payload for UI, export, and audit views."""
     
     combined_belief: float
     """Dempster-Shafer belief_threat component."""
