@@ -6,12 +6,6 @@ CTMonitor is a research-oriented prototype for studying how Certificate Transpar
 
 Certificate Transparency logs provide a high-volume stream of newly issued certificates. This project explores whether CT-derived features can be used to identify suspicious domains at navigation time, without relying on cloud services. The core emphasis is on local-first operation, transparent detector outputs, and browser-native decision surfaces.
 
-## Research Questions
-
-1. Can CT-derived features help flag suspicious domains during browsing?
-2. Which lightweight detectors provide the best precision for browser-side warnings?
-3. How much explanation can be surfaced directly in a Manifest V3 extension?
-4. What trade-offs arise between extension-only operation and optional backend enrichment?
 
 ## System Overview
 
@@ -29,11 +23,8 @@ Certificate Transparency logs provide a high-volume stream of newly issued certi
 3. Click Load unpacked.
 4. Select the `ctmonitor/extension` folder from this repository.
 
-### Optional Local Backend
 
-If you want backend-enriched verdicts during development or evaluation, run the local CTMonitor backend separately and enable backend enrichment in the extension settings. The extension remains usable without any backend process.
-
-## Experimental Framing
+## Experimental
 
 This repository is best understood as a prototype for iterative evaluation rather than a finished product.
 
@@ -80,11 +71,3 @@ Other workspace files reflect backend and research scaffolding used during devel
 - Browser-side analysis cannot fully replace server-side CT ingestion or large-scale model training.
 - The extension-local engine is intentionally lightweight and explainable, not a full CT pipeline.
 - Formal research claims require labeled datasets, calibration studies, and controlled evaluation.
-
-## Repository Scope
-
-The public repository is intended to keep the extension source tree and this README as the main deliverable for browsing and deployment. The local workspace can retain additional research scaffolding, but those files are not required for the extension-focused public snapshot.
-
-## Status
-
-This repository is maintained as a research prototype and implementation sandbox for CT-based threat detection.
