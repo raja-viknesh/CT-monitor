@@ -10,6 +10,7 @@ from sse_starlette.sse import EventSourceResponse
 from pathlib import Path
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from datetime import datetime, timezone
 
@@ -21,6 +22,14 @@ from ctmonitor.detectors.heuristic.tld_keyword import TLDKeywordDetector
 from ctmonitor.detectors.heuristic.homograph import HomographDetector
 
 app = FastAPI(title="CT Monitor API", version="0.1.0")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Initialize Engine
 normaliser = Normaliser()

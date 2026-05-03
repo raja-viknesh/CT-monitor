@@ -13,7 +13,11 @@ chrome.webNavigation.onBeforeNavigate.addListener(async (details) => {
         
         if (response.ok) {
             const verdict = await response.json();
-            chrome.storage.local.set({[details.tabId.toString()]: verdict});
+            // Store under both tabId and hostname so popup and content scripts can sync easily
+            chrome.storage.local.set({
+                [details.tabId.toString()]: verdict,
+                [domain]: verdict
+            });
             
             if (verdict.tier !== "SAFE") {
                 let color = verdict.tier === "BLOCK" ? "#E24B4A" : (verdict.tier === "WARN" ? "#EF9F27" : "#378ADD");
