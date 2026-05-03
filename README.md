@@ -1,6 +1,6 @@
 # CTMonitor: Research Prototype for Local-First CT Threat Detection
 
-CTMonitor is a research-oriented prototype for studying how Certificate Transparency (CT) telemetry can be used to detect phishing, typosquatting, and suspicious TLS certificate issuance with minimal latency. The current repository presents the project as a browser-extension-centered system with optional local backend enrichment, calibrated scoring, and explainable verdict output.
+CTMonitor is a research-oriented prototype for studying how Certificate Transparency (CT) telemetry can be used to detect phishing, typosquatting, and suspicious TLS certificate issuance with minimal latency. The reduced public repository presents the project as a browser-extension-centered system with optional local backend enrichment, calibrated scoring, and explainable verdict output.
 
 ## Abstract
 
@@ -19,6 +19,19 @@ Certificate Transparency logs provide a high-volume stream of newly issued certi
 - **Optional backend enrichment:** A local Python backend can enrich verdicts when available.
 - **Explainability:** Verdicts expose tier, risk score, detector breakdown, and weighted contributions.
 - **User interaction:** Popup, report, notification, and interstitial flows provide immediate feedback.
+
+## Deployment
+
+### Extension-Only Mode
+
+1. Open `chrome://extensions` in Chrome or Edge.
+2. Enable Developer mode.
+3. Click Load unpacked.
+4. Select the `ctmonitor/extension` folder from this repository.
+
+### Optional Local Backend
+
+If you want backend-enriched verdicts during development or evaluation, run the local CTMonitor backend separately and enable backend enrichment in the extension settings. The extension remains usable without any backend process.
 
 ## Experimental Framing
 
@@ -67,6 +80,10 @@ Other workspace files reflect backend and research scaffolding used during devel
 - Browser-side analysis cannot fully replace server-side CT ingestion or large-scale model training.
 - The extension-local engine is intentionally lightweight and explainable, not a full CT pipeline.
 - Formal research claims require labeled datasets, calibration studies, and controlled evaluation.
+
+## Repository Scope
+
+The public repository is intended to keep the extension source tree and this README as the main deliverable for browsing and deployment. The local workspace can retain additional research scaffolding, but those files are not required for the extension-focused public snapshot.
 
 ## Status
 
