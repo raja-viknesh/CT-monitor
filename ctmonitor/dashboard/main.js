@@ -39,10 +39,12 @@ function connectSSE() {
 async function analyzeDomain() {
     const input = document.getElementById("domain-input").value;
     const resultBox = document.getElementById("analysis-result");
+    const heatContainer = document.getElementById("heatmap-container");
     
     if (!input) return;
     
     resultBox.textContent = "Analyzing latency targets (<2ms)...";
+    heatContainer.innerHTML = ""; // Clear heatmap
     
     try {
         const response = await fetch("/analyze", {
@@ -52,6 +54,26 @@ async function analyzeDomain() {
         });
         
         const data = await response.json();
+        
+        // Render Heatmap dynamically
+        if(data.detector_results) {
+            data.detector_results.forEach(det => {
+                const heat = det.score * 100;
+                let color = "#4aff8b"; // Safe
+                if(heat > 35) color = "#4aa1ff";
+                if(heat > 60) color = "#ffb84a";
+                if(heat > 85) color = "#ff4a4a"; // Danger
+                
+                heatContainer.innerHTML += `
+                    <div style="flex: 1; text-align: center; background: #222; border: 1px solid ${color}; border-radius: 4px; padding: 10px;">
+                        <div style="font-size: 0.75em; color: #888;">${det.detector_name.replace('Detector','')}</div>
+                        <div style="font-size: 1.2em; font-weight: bold; color: ${color}">${heat.toFixed(1)}%</div>
+                        <div style="font-size: 0.7em; color: #666;">${det.latency_ms.toFixed(2)}ms</div>
+                    </div>
+                `;
+            });
+        }
+        
         resultBox.textContent = JSON.stringify(data, null, 2);
     } catch (e) {
         resultBox.textContent = "Error connecting to CTMonitor API: " + e.message;

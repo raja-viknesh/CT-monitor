@@ -4,13 +4,31 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 import asyncio
+import dataclasses
+from urllib.parse import urlparse
 from sse_starlette.sse import EventSourceResponse
 from pathlib import Path
+from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel
+from datetime import datetime, timezone
 
-from ctmonitor.ingestion.models import NormalisedCert, CertVerdict, CertVerdictTier
+from ctmonitor.ingestion.models import NormalisedCert, CertVerdict, CertVerdictTier, CertEvent
 from ctmonitor.pipeline.normaliser import Normaliser
+from ctmonitor.quorum.engine import QuorumEngine
+from ctmonitor.detectors.heuristic.levenshtein import LevenshteinDetector
+from ctmonitor.detectors.heuristic.tld_keyword import TLDKeywordDetector
+from ctmonitor.detectors.heuristic.homograph import HomographDetector
 
 app = FastAPI(title="CT Monitor API", version="0.1.0")
+
+# Initialize Engine
+normaliser = Normaliser()
+engine = QuorumEngine(detectors=[
+    LevenshteinDetector(),
+    TLDKeywordDetector(),
+    HomographDetector()
+])
 
 class AnalyzeRequest(BaseModel):
     domain: str
@@ -21,8 +39,28 @@ async def health():
 
 @app.post("/analyze")
 async def analyze(req: AnalyzeRequest):
-    # Live hook to quorum engine
-    return {"domain": req.domain, "risk_score": 0.88, "tier": "BLOCK", "confidence_lower": 0.85, "confidence_upper": 0.90, "latency_ms": 1.25}
+    # Extract domain if full URL is pasted (e.g. from browser extension)
+    raw_domain = req.domain.strip()
+    if raw_domain.startswith("http"):
+        raw_domain = urlparse(raw_domain).netloc
+
+    # Create dummy CertEvent for immediate analysis
+    event = CertEvent(
+        domain=raw_domain,
+        san_list=[raw_domain],
+        issuer_cn="Local Request",
+        org=None,
+        not_before=datetime.now(timezone.utc),
+        not_after=datetime.now(timezone.utc),
+        log_id="manual",
+        fingerprint_sha256="000"
+    )
+    
+    norm_cert = normaliser.process(event)
+    verdict = engine.evaluate(norm_cert)
+    
+    # Return serializable dict
+    return dataclasses.asdict(verdict)
 
 @app.get("/stream")
 async def stream():
