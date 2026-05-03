@@ -71,6 +71,10 @@ class QuorumEngine:
             reasoning.append("Structural signal: wildcard certificate")
         if cert.cert_duration_days and cert.cert_duration_days < 14:
             reasoning.append(f"Structural signal: short certificate lifetime ({cert.cert_duration_days} days)")
+        if not reasoning:
+            reasoning.append("No detector produced positive threat evidence; verdict is driven by low combined belief.")
+        elif risk_score == 0.0:
+            reasoning.append("All detector scores were low, so the combined verdict stays SAFE.")
 
         analysis = {
             "summary": {
@@ -81,6 +85,7 @@ class QuorumEngine:
                 "belief_threat": belief_threat,
                 "plausibility_threat": plausibility_threat,
                 "uncertainty": combined["theta"],
+                "signal_count": len(ranked_results),
             },
             "signals": top_signals,
             "reasoning": reasoning,

@@ -99,11 +99,19 @@ async def download_report(domain: str = Query(..., min_length=1)):
 async def stream():
     """SSE Endpoint for Server-Sent Events to push verdicts live."""
     async def event_generator():
+        sample_domains = [
+            "paypal-secure.example",
+            "devpost.com",
+            "xn--pple-43d.com",
+            "secure-login.example",
+        ]
+        index = 0
         while True:
             await asyncio.sleep(2)  # Mock pacing for local test
-            # Yield dummy payload matching the CertVerdict footprint
-            payload = {"domain": "mock-stream-paypal.com", "risk_score": 0.91, "tier": "BLOCK"}
-            yield {"event": "message", "data": payload}
+            domain = sample_domains[index % len(sample_domains)]
+            index += 1
+            payload = _verdict_payload(domain)
+            yield {"event": "message", "data": json.dumps(jsonable_encoder(payload))}
 
     return EventSourceResponse(event_generator())
 

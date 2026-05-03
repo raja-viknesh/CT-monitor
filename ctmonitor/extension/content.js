@@ -136,6 +136,7 @@ function showBanner(verdict) {
         banner.style.fontWeight = "700";
         banner.style.boxShadow = "0 4px 6px rgba(0,0,0,0.3)";
         banner.style.pointerEvents = "auto";
+        banner.style.cursor = "pointer";
 
         const message = document.createElement("span");
         message.id = "ctmonitor-banner-message";
@@ -194,6 +195,11 @@ function showBanner(verdict) {
         actionsNode.appendChild(viewReport);
         actionsNode.appendChild(reanalyze);
         actionsNode.appendChild(dismiss);
+
+        banner.addEventListener("click", (event) => {
+            if (event.target && event.target.tagName === "BUTTON") return;
+            chrome.runtime.sendMessage({type: "open-report", domain: HOSTNAME});
+        });
 
         ensureRoot().appendChild(banner);
     }

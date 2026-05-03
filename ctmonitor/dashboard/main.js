@@ -70,7 +70,13 @@ function connectSSE() {
     };
 
     evtSource.onmessage = (event) => {
-        const verdict = JSON.parse(event.data);
+        let verdict;
+        try {
+            verdict = typeof event.data === "string" ? JSON.parse(event.data) : event.data;
+        } catch (error) {
+            console.error("Failed to parse SSE payload", error, event.data);
+            return;
+        }
         
         const row = document.createElement("tr");
         row.innerHTML = `
