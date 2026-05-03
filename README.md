@@ -114,69 +114,82 @@ ctmonitor/
 │   │   └── sarif.py
 │   ├── extension/              # Manifest V3 browser extension
 │   │   ├── manifest.json
-│   │   ├── background.js       # Service worker
-│   │   ├── popup.html
-│   │   ├── popup.js
-│   │   └── content.js
-│   ├── data/                   # Static data
-│   │   ├── brands_10k.txt
-│   │   └── tld_rules.yaml
-│   ├── cli.py                  # Typer CLI entry point
-│   └── __init__.py
-│
-├── models/                     # Dynamically generated (gitignored)
-│   ├── ngram_4gram.pkl.gz
-│   ├── vae.onnx
-│   ├── transformer.onnx
-│   └── [...ONNX + calibrators...]
-│
-└── tests/
-    ├── conftest.py
-    ├── test_ingestion.py
-    ├── test_heuristic_detectors.py
-    ├── test_ml_detectors.py
-    ├── test_quorum.py
-    ├── test_api.py
-    ├── test_storage.py
-    └── test_sarif.py
-```
+# CTMonitor: Research Prototype for Local-First CT Threat Detection
 
-## Architecture Pillars
+CTMonitor is a research-oriented prototype for studying certificate transparency-based phishing and typosquatting detection. The system combines deterministic heuristics, lightweight machine-learning wrappers, local persistence, and a Manifest V3 browser extension that can operate without a backend.
 
-### 1. Local-First, Zero Cloud
-Every verdict, every model, every certificate stays on the machine. No external API calls except Certstream (standard CT log stream). SQLite persistence ensures you can query historical verdicts without cloud sync.
+## Abstract
 
-### 2. Calibrated Evidence
-Raw detector scores mean nothing. After isotonic calibration, `risk_score=0.87` is statistically grounded: "87% of domains in the calibration set with this profile turned out to be malicious."
+Certificate Transparency (CT) logs provide a near-real-time record of issued TLS certificates. This repository explores whether CT telemetry can be transformed into actionable, low-latency phishing signals without relying on cloud services. The prototype emphasizes local-first operation, calibrated scoring, and explainable detector outputs that can be inspected directly in the browser extension.
 
-### 3. Conformal Prediction Intervals
-The `[confidence_lower, confidence_upper]` band comes with a mathematical guarantee: if we set α=0.05, then 95% of test set verdicts fall within the interval. Enterprise-grade credibility.
+## Research Questions
 
-### 4. Identical Detector Interface
-Heuristics and ML detectors share `BaseDetector` ABC. Adding a new detector = one file + one registration line in the quorum engine.
+1. Can CT-derived certificate features be used to flag suspicious domains at navigation time?
+2. Which simple detectors are most useful for high-precision browser-side warnings?
+3. How much explanation can be surfaced in a browser extension without requiring a remote service?
+4. What trade-offs arise when the same system is deployed with or without a local backend?
 
-### 5. ONNX Edge Runtime
-Transformer and VAE models export to ONNX opset 17 with INT8 quantization. Inference runs via `onnxruntime` (no `torch` at serve time), enabling future WebAssembly / browser-native deployment.
+## System Overview
 
-### 6. SARIF + MITRE ATT&CK
-Verdicts map cleanly to SARIF 2.1.0 JSON and MITRE ATT&CK T1588.004 (Supply Chain Compromise: Malicious Software). Plugs directly into GitHub Advanced Security, Splunk, Fortify, any SIEM.
+- **Extension-local inference:** The Manifest V3 extension runs a JavaScript detector engine directly in the browser.
+- **Optional backend enrichment:** When a local Python service is available, it can enrich verdicts with additional evidence.
+- **Explainability:** Verdicts expose tier, risk score, detector breakdown, and weighted contributions.
+- **User feedback loop:** The popup, report page, and BLOCK interstitial give immediate navigation-time feedback.
 
-## Implementation Phases
+## Experimental Framing
 
-See [`PROGRESS.md`](PROGRESS.md) for the 18-phase build sequence. Each phase has success criteria and must pass tests before proceeding.
+This repository is structured as a prototype for iterative evaluation rather than a polished commercial product.
 
-## Storage & Performance Notes
+- **Inputs:** domain names, certificate metadata, and browser navigation events.
+- **Outputs:** SAFE / WATCH / WARN / BLOCK verdicts, confidence intervals, and contribution summaries.
+- **Deployment modes:** extension-only baseline, or extension plus local backend.
 
-- **3GB Constraint:** Torch is CPU-only. Datasets are compressed. Streamlit replaced with Vanilla JS (~150MB savings).
-- **No Docker:** Zero Docker images. Everything runs natively.
-- **Inference Latency:** Target <2ms per cert after ONNX quantization. Measured with onnxruntime on CPU.
+## Repository Contents
 
-## Standards & Compliance
+The public repo currently centers on the browser extension and its supporting artifacts:
 
-- **SARIF 2.1.0:** JSON Schema validation enforced.
-- **MITRE ATT&CK:** T1588.004 mappings in verdict evidence.
-- **Unicode & Internationalization:** Full Punycode support for IDN domains.
+- `ctmonitor/extension/manifest.json`
+- `ctmonitor/extension/background.js`
+- `ctmonitor/extension/engine.js`
+- `ctmonitor/extension/content.js`
+- `ctmonitor/extension/popup.html`
+- `ctmonitor/extension/popup.js`
+- `ctmonitor/extension/report.html`
+- `ctmonitor/extension/report.js`
+- `ctmonitor/extension/options.html`
+- `ctmonitor/extension/options.js`
+- `ctmonitor/extension/block.html`
+- `ctmonitor/extension/block.js`
 
-## Contact
+Additional files in the workspace reflect backend and research scaffolding used during development.
 
-Raja Viknesh — `rajaviknesh.off@gmail.com`
+## Extension Operation
+
+1. On navigation, the worker evaluates the current domain locally.
+2. The extension stores the verdict in `chrome.storage`.
+3. WARN/BLOCK verdicts surface through badges, notifications, and the content-script banner.
+4. BLOCK verdicts can trigger an interstitial with continue/dismiss controls.
+5. The report view shows detector outputs and the strongest contributions.
+
+## Privacy and Safety Considerations
+
+- Local analysis is the default.
+- Backend enrichment is optional and disabled by default in settings.
+- Internal and private hosts are treated conservatively.
+- Stored verdicts are pruned over time to reduce retention.
+
+## Reproducibility Notes
+
+- The extension can be loaded unpacked from `ctmonitor/extension`.
+- No new files are required for the README update.
+- The codebase is intended for inspection, local testing, and further research iteration.
+
+## Limitations
+
+- Browser-side analysis cannot fully replace server-side CT ingestion or large-scale model training.
+- The extension-local engine is intentionally lightweight and explainable, not a full CT pipeline.
+- Stronger research claims require formal evaluation, labeled datasets, and calibration studies.
+
+## Status
+
+This repository is being maintained as a research prototype and implementation sandbox for CT-based threat detection.
