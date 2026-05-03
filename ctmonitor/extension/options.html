@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CTMonitor Settings</title>
+    <style>
+        body { font-family: Segoe UI, system-ui, sans-serif; margin: 0; background: #0b1220; color: #e2e8f0; }
+        .wrap { max-width: 760px; margin: 22px auto; padding: 0 16px 20px; }
+        .panel { background: #111827; border: 1px solid #223047; border-radius: 10px; padding: 14px; margin-top: 12px; }
+        .row { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin: 10px 0; }
+        .muted { color: #94a3b8; font-size: 13px; }
+        button { border: 0; border-radius: 8px; padding: 9px 12px; cursor: pointer; background: #2563eb; color: #fff; font-weight: 600; }
+        button.secondary { background: #334155; }
+        .ok { color: #22c55e; }
+    </style>
+</head>
+<body>
+    <div class="wrap">
+        <h2 style="margin:0;">CTMonitor Settings</h2>
+        <div class="muted">Privacy-first defaults for extension-only deployment.</div>
+
+        <div class="panel">
+            <div class="row">
+                <div>
+                    <div><strong>Backend Enrichment</strong></div>
+                    <div class="muted">Allow optional calls to local API at 127.0.0.1:8000 for enriched verdicts.</div>
+                </div>
+                <input id="backend-enrichment" type="checkbox">
+            </div>
+
+            <div class="row">
+                <div>
+                    <div><strong>Notifications</strong></div>
+                    <div class="muted">Show WARN/BLOCK notification popups.</div>
+                </div>
+                <input id="notifications" type="checkbox">
+            </div>
+
+            <div class="row">
+                <div>
+                    <div><strong>BLOCK Interstitial</strong></div>
+                    <div class="muted">Open a safety interstitial for BLOCK verdicts before loading the page.</div>
+                </div>
+                <input id="block-interstitial" type="checkbox">
+            </div>
+
+            <div class="row">
+                <button id="save-btn">Save Settings</button>
+                <button id="clear-btn" class="secondary">Clear Stored Verdicts</button>
+            </div>
+            <div id="status" class="muted"></div>
+        </div>
+    </div>
+    <script src="options.js"></script>
+</body>
+</html>

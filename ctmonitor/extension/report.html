@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CTMonitor Report</title>
+    <style>
+        body { margin: 0; font-family: Segoe UI, system-ui, sans-serif; background: #0f172a; color: #e2e8f0; }
+        .wrap { max-width: 980px; margin: 24px auto; padding: 0 16px 20px; }
+        .head { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+        .badge { padding: 5px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; }
+        .SAFE { background: #16a34a; color: #fff; }
+        .WATCH { background: #2563eb; color: #fff; }
+        .WARN { background: #d97706; color: #fff; }
+        .BLOCK { background: #dc2626; color: #fff; }
+        .panel { margin-top: 14px; border: 1px solid #1e293b; border-radius: 12px; background: #111827; padding: 14px; }
+        .muted { color: #94a3b8; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; }
+        .card { border: 1px solid #243244; background: #0b1220; border-radius: 10px; padding: 10px; }
+        .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+        button { border: 0; border-radius: 8px; padding: 9px 12px; cursor: pointer; font-weight: 600; background: #2563eb; color: #fff; }
+        button.secondary { background: #334155; }
+        pre { overflow: auto; background: #020617; border-radius: 8px; padding: 10px; border: 1px solid #1e293b; }
+    </style>
+</head>
+<body>
+    <div class="wrap">
+        <div class="head">
+            <div>
+                <h2 style="margin:0;">CTMonitor Domain Report</h2>
+                <div id="domain" class="muted"></div>
+            </div>
+            <div id="tier" class="badge SAFE">SAFE</div>
+        </div>
+
+        <div class="panel">
+            <div class="grid">
+                <div class="card"><div class="muted">Risk Score</div><div id="risk">0%</div></div>
+                <div class="card"><div class="muted">Confidence Interval</div><div id="interval">0.00 - 0.00</div></div>
+                <div class="card"><div class="muted">Mode</div><div id="mode">extension-local</div></div>
+                <div class="card"><div class="muted">Latency</div><div id="latency">0.0 ms</div></div>
+            </div>
+            <div class="actions">
+                <button id="reanalyze">Reanalyze</button>
+                <button id="download" class="secondary">Download JSON</button>
+                <button id="open-dashboard" class="secondary">Open Local Dashboard</button>
+            </div>
+        </div>
+
+        <div class="panel">
+            <h3 style="margin-top:0;">Reasoning</h3>
+            <div id="reasoning" class="muted">No reasoning available.</div>
+        </div>
+
+        <div class="panel">
+            <h3 style="margin-top:0;">Top Contributions</h3>
+            <div id="contributions" class="muted">No contribution data.</div>
+        </div>
+
+        <div class="panel">
+            <h3 style="margin-top:0;">Detector Breakdown</h3>
+            <div id="detectors" class="grid"></div>
+        </div>
+
+        <div class="panel">
+            <h3 style="margin-top:0;">Raw Verdict</h3>
+            <pre id="raw"></pre>
+        </div>
+    </div>
+    <script src="engine.js"></script>
+    <script src="report.js"></script>
+</body>
+</html>

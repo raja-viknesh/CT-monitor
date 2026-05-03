@@ -21,11 +21,18 @@
       "128": "icons/icon128.png"
     }
   },
+  "options_page": "options.html",
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["content.js"],
+      "js": ["engine.js", "content.js"],
       "run_at": "document_start"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["report.html", "report.js", "block.html", "block.js", "engine.js", "icons/*.png"],
+      "matches": ["<all_urls>"]
     }
   ]
 }

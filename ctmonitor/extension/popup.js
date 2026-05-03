@@ -4,6 +4,30 @@ function setOfflineMode(message) {
     document.getElementById("analysis-preview").textContent = message;
 }
 
+function topContributions(verdict, topN = 3) {
+    const rows = (verdict.detector_results || [])
+        .map((d) => ({
+            name: d.detector_name,
+            weighted: (Number(d.score) || 0) * (Number(d.confidence) || 0),
+            score: Number(d.score) || 0,
+            confidence: Number(d.confidence) || 0,
+        }))
+        .sort((a, b) => b.weighted - a.weighted)
+        .slice(0, topN);
+    return rows;
+}
+
+function downloadJSONReport(domain, verdict) {
+    const payload = JSON.stringify(verdict, null, 2);
+    const blob = new Blob([payload], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `ctmonitor-report-${domain}.json`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+}
+
 function fetchBackendStatus() {
     return new Promise((resolve) => {
         chrome.runtime.sendMessage({ type: "get-backend-status" }, (response) => {
@@ -25,11 +49,16 @@ function renderVerdict(verdict, domain, tabId) {
     const preview = document.getElementById("analysis-preview");
     const summary = verdict.analysis?.summary || {};
     const reasoning = verdict.analysis?.reasoning || [];
+    const contributions = topContributions(verdict, 3)
+        .map((c) => `${c.name}: ${(c.weighted * 100).toFixed(1)} weighted`)
+        .join(" | ");
     preview.textContent = [
         `Report for ${domain}`,
+        `Mode: ${verdict.analysis_mode || "extension-local"}`,
         `Belief: ${(summary.belief_threat ?? verdict.combined_belief ?? 0).toFixed(3)}`,
         `Plausibility: ${(summary.plausibility_threat ?? verdict.combined_plausibility ?? 0).toFixed(3)}`,
-        `Signals: ${reasoning.slice(0, 3).join(" | ") || "No notable signals"}`
+        `Signals: ${reasoning.slice(0, 3).join(" | ") || "No notable signals"}`,
+        `Contrib: ${contributions || "N/A"}`
     ].join("\n");
 
     document.getElementById("reanalyze-btn").onclick = () => {
@@ -37,6 +66,11 @@ function renderVerdict(verdict, domain, tabId) {
     };
 
     document.getElementById("download-report-btn").onclick = async () => {
+        if (verdict.analysis_mode === "extension-local") {
+            downloadJSONReport(domain, verdict);
+            return;
+        }
+
         try {
             const response = await fetch(`http://127.0.0.1:8000/api/report/download?domain=${encodeURIComponent(domain)}`);
             if (!response.ok) {
@@ -50,41 +84,64 @@ function renderVerdict(verdict, domain, tabId) {
             anchor.click();
             URL.revokeObjectURL(url);
         } catch (error) {
-            setOfflineMode("CTMonitor local server is offline. Start it with: ctmonitor serve");
+            downloadJSONReport(domain, verdict);
         }
     };
+
+    document.getElementById("view-report-btn").onclick = () => {
+        chrome.runtime.sendMessage({type: "open-report", domain}, () => {});
+        window.close();
+    };
+
+    document.getElementById("settings-btn").onclick = () => {
+        chrome.runtime.openOptionsPage();
+        window.close();
+    };
+}
+
+function buildLocalVerdict(domain) {
+    const verdict = CTLocalEngine.analyzeDomain(domain);
+    verdict.analysis_mode = "extension-local";
+    verdict.generated_at = new Date().toISOString();
+    return verdict;
 }
 
 chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
     const tab = tabs[0];
-    const url = new URL(tab.url);
-    const domain = url.hostname;
+    let domain = "";
+    try {
+        const url = new URL(tab.url);
+        domain = url.hostname;
+    } catch {
+        document.getElementById("domain-name").textContent = "Unsupported tab URL";
+        setOfflineMode("CTMonitor can only analyze http/https pages.");
+        return;
+    }
 
     document.getElementById("domain-name").textContent = domain;
 
-    fetchBackendStatus().then((status) => {
-        if (status.status === "down") {
-            setOfflineMode("Local server not reachable. Start: ctmonitor serve\nYou can still browse; live analysis resumes automatically when server is up.");
-        }
-    });
-
-    chrome.storage.local.get([tab.id.toString()], (result) => {
+    chrome.storage.local.get([tab.id.toString(), domain, `${tab.id.toString()}::backend`, `${domain}::backend`], (result) => {
         const verdict = result[tab.id.toString()];
-        if (verdict) {
-            renderVerdict(verdict, domain, tab.id);
+        const domainVerdict = result[domain];
+        const bestVerdict = verdict || domainVerdict;
+        if (bestVerdict) {
+            renderVerdict(bestVerdict, domain, tab.id);
         } else {
-            document.getElementById("score-display").textContent = "Unscanned";
-            document.getElementById("tier-display").textContent = "N/A";
-            document.getElementById("analysis-preview").textContent = "The current tab has not been analyzed yet.";
+            const localVerdict = buildLocalVerdict(domain);
+            chrome.storage.local.set({
+                [tab.id.toString()]: localVerdict,
+                [domain]: localVerdict,
+            });
+            renderVerdict(localVerdict, domain, tab.id);
             document.getElementById("reanalyze-btn").onclick = () => {
-                chrome.runtime.sendMessage({type: "reanalyze-domain", domain, tabId: tab.id}, (response) => {
-                    if (chrome.runtime.lastError || !response?.ok) {
-                        setOfflineMode("Reanalysis failed because local server is offline. Start: ctmonitor serve");
-                        return;
-                    }
-                    window.close();
-                });
+                chrome.runtime.sendMessage({type: "reanalyze-domain", domain, tabId: tab.id}, () => window.close());
             };
         }
+
+        fetchBackendStatus().then((status) => {
+            if (status.status === "down" && !bestVerdict) {
+                setOfflineMode("CTMonitor can analyze locally. Backend enrichment is currently unavailable.");
+            }
+        });
     });
 });
