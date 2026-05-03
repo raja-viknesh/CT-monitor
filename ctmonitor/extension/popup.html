@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <style>
+        body { width: 250px; font-family: system-ui, sans-serif; background: #121212; color: #fff; padding: 15px; margin: 0; }
+        h3 { margin: 0 0 10px 0; font-size: 16px; border-bottom: 1px solid #333; padding-bottom: 5px; }
+        .score { font-size: 24px; font-weight: bold; margin-bottom: 10px; }
+        .details { font-size: 12px; color: #aaa; margin-bottom: 15px; }
+        a { color: #4aa1ff; text-decoration: none; font-size: 12px; }
+        a:hover { text-decoration: underline; }
+        .SAFE { color: #4aff8b; }
+        .WATCH { color: #4aa1ff; }
+        .WARN { color: #ffb84a; }
+        .BLOCK { color: #ff4a4a; }
+    </style>
+</head>
+<body>
+    <h3>CTMonitor Edge</h3>
+    <div id="domain-name" class="details">Loading...</div>
+    <div id="score-display" class="score">--</div>
+    <div id="tier-display" style="font-weight: bold; margin-bottom: 15px;">--</div>
+    <a href="http://127.0.0.1:8000" target="_blank">Open Local Dashboard ↗</a>
+    <script src="popup.js"></script>
+</body>
+</html>
