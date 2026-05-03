@@ -66,8 +66,4 @@ Other workspace files reflect backend and research scaffolding used during devel
 - Private or sensitive hostnames are treated conservatively.
 - Stored verdicts are pruned over time to reduce retention.
 
-## Limitations
 
-- Browser-side analysis cannot fully replace server-side CT ingestion or large-scale model training.
-- The extension-local engine is intentionally lightweight and explainable, not a full CT pipeline.
-- Formal research claims require labeled datasets, calibration studies, and controlled evaluation.
